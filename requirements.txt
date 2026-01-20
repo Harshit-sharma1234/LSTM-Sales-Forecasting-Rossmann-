@@ -1,9 +1,12 @@
-﻿pandas
+﻿# Core
+pandas
 numpy
-matplotlib
+pyyaml
+joblib
+streamlit
+
+# Machine Learning
 scikit-learn
 tensorflow
-keras
-joblib
-pyyaml
-streamlit
+# keras is included in tensorflow, removing to avoid conflicts
+matplotlib
