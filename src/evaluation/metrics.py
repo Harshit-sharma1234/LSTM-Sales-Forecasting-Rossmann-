@@ -7,5 +7,5 @@ def mae_rmse_from_logs(y_true_log: np.ndarray, y_pred_log: np.ndarray) -> tuple[
     y_true = np.expm1(y_true_log.squeeze())
     y_pred = np.expm1(y_pred_log.squeeze())
     mae = mean_absolute_error(y_true, y_pred)
-    rmse = mean_squared_error(y_true, y_pred, squared=False)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     return float(mae), float(rmse)

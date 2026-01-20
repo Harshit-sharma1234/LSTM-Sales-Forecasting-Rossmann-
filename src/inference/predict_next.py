@@ -11,7 +11,7 @@ from src.features.feature_engineering import add_lags_and_rolls
 
 def predict_next(store_id: int, lookback: int = 28,
                  processed_path: str | Path = 'data/processed/rossmann_processed.csv',
-                 model_path: str | Path = 'models/rossmann_lstm.keras',
+                 model_path: str | Path = 'models/rossmann_lstm_best.keras',
                  scaler_path: str | Path = 'models/feature_scaler.pkl') -> float:
     processed_path = Path(processed_path)
     model_path = Path(model_path)
@@ -19,22 +19,36 @@ def predict_next(store_id: int, lookback: int = 28,
 
     df = pd.read_csv(processed_path, parse_dates=['Date'])
     df = df[df['Store'] == store_id].sort_values('Date').copy()
+    
     if len(df) < lookback + 30:
-        raise ValueError('Not enough history for the requested lookback')
+        raise ValueError(f'Not enough history for store {store_id} (need {lookback + 30}, have {len(df)})')
 
-    # Feature eng on this store slice
-    df = add_lags_and_rolls(df, 'Sales_log')
-    df = df.dropna().reset_index(drop=True)
+    # Ensure Sales_log exists
+    if 'Sales_log' not in df.columns:
+        df['Sales_log'] = np.log1p(df['Sales'].clip(lower=0))
 
+    # Compute lag and roll features directly (no groupby needed for single store)
+    target_col = 'Sales_log'
+    for L in (1, 7, 14, 28):
+        df[f'lag_{L}'] = df[target_col].shift(L)
+    for w in (7, 28):
+        df[f'roll{w}'] = df[target_col].shift(1).rolling(w).mean()
+    
     feature_cols = ['dow','month','year','week','Open','Promo','SchoolHoliday'] + \
                    [f'lag_{L}' for L in (1,7,14,28)] + [f'roll{w}' for w in (7,28)]
+    
+    # Drop NaN rows only in feature columns (not all columns)
+    df = df.dropna(subset=feature_cols).reset_index(drop=True)
+    
+    if len(df) < lookback:
+        raise ValueError(f'Not enough valid rows after feature engineering for store {store_id} (have {len(df)}, need {lookback})')
 
     scaler = joblib.load(scaler_path)
 
     X_store = df[feature_cols].values.astype('float32')
     X_store = scaler.transform(X_store)
 
-    X_window = X_store[-lookback:,:]
+    X_window = X_store[-lookback:, :]
     X_window = X_window[None, ...]
 
     model = keras.models.load_model(model_path)
