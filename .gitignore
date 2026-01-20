@@ -28,3 +28,7 @@ checkpoint
 tuning/
 *.sqlite
 
+# Deployment Whitelist (Force track these files)
+!models/feature_scaler.pkl
+!models/rossmann_lstm_best.keras
+!data/processed/rossmann_processed.csv
