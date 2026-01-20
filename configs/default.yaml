@@ -1,0 +1,24 @@
+﻿# Paths
+paths:
+  raw_dir: data/raw
+  processed_path: data/processed/rossmann_processed.csv
+  model_path: models/rossmann_lstm.keras
+  scaler_path: models/feature_scaler.pkl
+  plot_path: reports/figures/lstm_test_plot.png
+  preds_path: models/test_predictions.csv
+
+# Modeling
+model:
+  lookback: 28
+  horizon: 1
+  units: 64
+  dropout: 0.2
+  lr: 0.001
+  batch_size: 64
+  epochs: 50
+  early_stopping_patience: 5
+
+# Splits
+split:
+  test_ratio: 0.1
+  val_ratio: 0.1

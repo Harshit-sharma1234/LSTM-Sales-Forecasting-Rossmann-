@@ -1,0 +1,30 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.env
+.DS_Store
+.idea/
+.vscode/
+*.log
+# Data & artifacts
+data/raw/
+models/
+experiments/
+logs/
+reports/figures/
+# TensorFlow/Keras
+*.h5
+*.keras
+*.pb
+checkpoint
+*.ckpt*
+# Tuner/Optuna
+tuning/
+*.sqlite
+
