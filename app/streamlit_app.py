@@ -31,16 +31,17 @@ df = pd.read_csv(processed_path, parse_dates=['Date'])
 stores = sorted(df['Store'].unique().tolist())
 store_labels = [f"Store {s}" for s in stores]
 
-col1, col2, col3 = st.columns(3)
+# Main Layout
+col1, col2 = st.columns([2, 1], vertical_alignment="bottom")
+
 with col1:
-    store_label = st.selectbox("Store", store_labels, index=0)
+    store_label = st.selectbox("Select Store", store_labels, index=0)
     store_id = int(store_label.split()[-1])  # Extract number from "Store X"
+
 with col2:
     # Model was trained with lookback=28, so this must be fixed
     lookback = 28
-    st.info(f"Lookback window: {lookback} days (fixed)")
-with col3:
-    run_btn = st.button("Predict next day")
+    st.metric(label="Lookback Window", value=f"{lookback} Days", help="This input is fixed by the trained model architecture.")
 
 # Sidebar - Global Model Performance
 st.sidebar.title("Model Metrics")
@@ -48,7 +49,7 @@ st.sidebar.markdown("Based on test set evaluation:")
 st.sidebar.metric("Model Accuracy", "~90%")
 st.sidebar.metric("Mean Log Error", "0.02")
 st.sidebar.metric("Mean Error (MAE)", "€606")
-st.sidebar.info("The model typically predicts within ±10% of the actual value.")
+st.sidebar.caption("The model typically predicts within ±10% of the actual value.")
 
 st.divider()
 
@@ -65,27 +66,28 @@ m3.metric("Total Days Recorded", f"{len(store_data)}")
 
 st.divider()
 
-if run_btn:
-    try:
+# Automatic Prediction (No button needed)
+try:
+    with st.spinner(f"Predicting implementation sales for Store {store_id}..."):
         pred = predict_next(int(store_id), int(lookback), processed_path, model_path, scaler_path)
+    
+    # Calculate context
+    diff_from_avg = ((pred - avg_sales) / avg_sales) * 100
+    lower_bound = pred * 0.90
+    upper_bound = pred * 1.10
+    
+    st.success(f"### Forecast: €{pred:,.0f}")
+    
+    c1, c2 = st.columns(2)
+    c1.markdown(f"**Confidence Range (±10%):** \n €{lower_bound:,.0f} — €{upper_bound:,.0f}")
+    
+    if diff_from_avg > 0:
+        c2.markdown(f"**{diff_from_avg:.1f}% higher** than this store's average.")
+    else:
+        c2.markdown(f"**{abs(diff_from_avg):.1f}% lower** than this store's average.")
         
-        # Calculate context
-        diff_from_avg = ((pred - avg_sales) / avg_sales) * 100
-        lower_bound = pred * 0.90
-        upper_bound = pred * 1.10
-        
-        st.success(f"### Forecast: €{pred:,.0f}")
-        
-        c1, c2 = st.columns(2)
-        c1.markdown(f"**Confidence Range (±10%):** \n €{lower_bound:,.0f} — €{upper_bound:,.0f}")
-        
-        if diff_from_avg > 0:
-            c2.markdown(f"📈 **{diff_from_avg:.1f}% higher** than this store's average.")
-        else:
-            c2.markdown(f"📉 **{abs(diff_from_avg):.1f}% lower** than this store's average.")
-            
-    except Exception as e:
-        st.exception(e)
+except Exception as e:
+    st.exception(e)
 
 # Recent history plot for context
 st.subheader("Recent history (last 180 days)")
